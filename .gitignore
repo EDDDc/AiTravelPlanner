@@ -1,0 +1,33 @@
+/.idea/
+/.vscode/
+/.DS_Store
+Thumbs.db
+
+# Node.js
+node_modules/
+dist/
+coverage/
+
+# Java / Spring Boot
+target/
+.gradle/
+build/
+out/
+
+# Environment & runtime
+.env
+.env.local
+.env.*.local
+*.log
+logs/
+/tmp/
+
+# Docker
+*.pid
+/docker-data/
+
+# Misc
+*.iml
+*.swp
+*.swo
+.pytest_cache/

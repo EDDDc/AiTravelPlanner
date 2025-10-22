@@ -1,0 +1,29 @@
+{
+  "name": "ai-travel-planner",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Workspace tooling for the AI Travel Planner project.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/example/ai-travel-planner.git"
+  },
+  "license": "MIT",
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "prepare": "husky install",
+    "lint": "echo \"[info] 前后端尚未初始化，稍后将补充 lint 脚本\"",
+    "format": "prettier --write \"**/*.{js,jsx,ts,tsx,vue,json,md,yml,yaml}\"",
+    "format:check": "prettier --check \"**/*.{js,jsx,ts,tsx,vue,json,md,yml,yaml}\""
+  },
+  "devDependencies": {
+    "husky": "^9.1.6",
+    "lint-staged": "^15.2.9",
+    "prettier": "^3.3.3"
+  },
+  "lint-staged": {
+    "**/*.{js,jsx,ts,tsx,vue,json,md,yml,yaml}": "prettier --check"
+  }
+}
