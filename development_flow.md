@@ -3,7 +3,7 @@
 ## 阶段 0：项目启动与环境准备
 
 - [x] 确认团队角色与分工（前端 / 后端 / 测试 / 运维）
-- [x] 建立项目管理看板（临时以内置文档跟踪，正式使用 GitHub Projects，见 `docs/project_management.md`）
+- [x] 建立项目管理看板（临时以内置文档记录，正式使用 GitHub Projects，见 `docs/project_management.md`）
 - [x] 搭建开发环境：Node.js、Java/Spring Boot SDK、包管理工具、Docker（见 `docs/environment.md`）
 - [x] 配置代码规范与工具：Lint、Prettier、EditorConfig、Husky+lint-staged（根目录已完成初始配置）
 - [x] 创建 `.env.example`，约定 API Key、数据库等环境变量命名
@@ -33,7 +33,7 @@
 - [x] 建立全局样式体系（自定义变量 + 响应式布局）
 - [x] 实现登录/注册页面与全局布局（顶部导航 + 侧边栏）
 - [x] 完成 API Key 设置页表单并与后端交互占位逻辑
-- [ ] 引入高德地图 SDK 基础封装，验证地图加载
+- [x] 引入高德地图 SDK 基础封装，提供示例地图视图
 
 ## 阶段 4：核心业务功能迭代
 

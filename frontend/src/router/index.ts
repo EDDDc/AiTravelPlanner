@@ -1,4 +1,4 @@
-import {
+﻿import {
   createRouter,
   createWebHistory,
   type RouteRecordRaw,
@@ -39,6 +39,12 @@ const routes: RouteRecordRaw[] = [
         name: "budget",
         component: () => import("../views/BudgetView.vue"),
         meta: { title: "预算中心" },
+      },
+      {
+        path: "map",
+        name: "map",
+        component: () => import("../views/MapView.vue"),
+        meta: { title: "地图视图" },
       },
       {
         path: "settings/api-keys",

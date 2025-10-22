@@ -24,7 +24,7 @@
 - ✅ 阶段 0：环境准备与规范配置
 - ✅ 阶段 1：产品设计与原型确认
 - ✅ 阶段 2：后端基础设施
-- 🚧 阶段 3：前端框架与通用能力（当前阶段）
+- ✅ 阶段 3：前端框架与通用能力
 
 ## 文档索引
 
@@ -43,16 +43,16 @@
 ## 快速开始（后端）
 
 1. 进入 `backend` 目录：`cd backend`。
-2. 复制根目录 `.env.example` 中的数据库配置到本地 `.env`，指向 Supabase/PostgreSQL。
-3. 执行 `./mvnw spring-boot:run`（默认启用 `dev` profile，Flyway 会自动迁移结构）。
+2. 复制根目录 `.env.example` 为 `.env`，填写数据库连接信息（Supabase/PostgreSQL）。
+3. 执行 `./mvnw spring-boot:run`（默认启用 `dev` profile，Flyway 自动迁移表结构）。
 4. 运行测试：`./mvnw test`。
 
 ## 快速开始（前端）
 
 1. 进入 `frontend` 目录：`cd frontend`。
-2. 复制 `.env.example` 为 `.env`，设置 `VITE_APP_API_BASE_URL` 指向后端服务地址。
+2. 复制 `.env.example` 为 `.env`，设置 `VITE_APP_API_BASE_URL` 以及 `VITE_APP_AMAP_WEB_KEY`。
 3. 安装依赖：`npm install`。
-4. 本地开发：`npm run dev`；构建产物：`npm run build`。
+4. 本地开发：`npm run dev`；生产构建：`npm run build`。
 
 ## 工程检查
 

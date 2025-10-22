@@ -29,6 +29,13 @@
           预算中心
         </RouterLink>
         <RouterLink
+          to="/map"
+          class="nav__item"
+          active-class="nav__item--active"
+        >
+          地图视图
+        </RouterLink>
+        <RouterLink
           to="/settings/api-keys"
           class="nav__item"
           active-class="nav__item--active"
