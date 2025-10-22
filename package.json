@@ -8,10 +8,6 @@
     "url": "git+https://github.com/example/ai-travel-planner.git"
   },
   "license": "MIT",
-  "workspaces": [
-    "frontend",
-    "backend"
-  ],
   "scripts": {
     "prepare": "husky install",
     "lint": "echo \"[info] 前后端尚未初始化，稍后将补充 lint 脚本\"",

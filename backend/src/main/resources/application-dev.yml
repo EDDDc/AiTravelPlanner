@@ -1,0 +1,24 @@
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/aitravelplanner}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: ${SPRING_DATASOURCE_MAX_POOL_SIZE:10}
+  flyway:
+    enabled: true
+    placeholders:
+      schema: ${SPRING_DATASOURCE_SCHEMA:public}
+
+app:
+  security:
+    jwt:
+      issuer: ${APP_SECURITY_JWT_ISSUER:aitravel-planner}
+      access-token-ttl: ${APP_SECURITY_JWT_ACCESS_TTL:PT1H}
+      refresh-token-ttl: ${APP_SECURITY_JWT_REFRESH_TTL:PT7D}
+      secret: ${APP_SECURITY_JWT_SECRET:change-me}
+
+logging:
+  level:
+    org.hibernate.SQL: INFO

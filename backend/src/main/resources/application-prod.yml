@@ -1,0 +1,27 @@
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: ${SPRING_DATASOURCE_MAX_POOL_SIZE:20}
+      minimum-idle: ${SPRING_DATASOURCE_MIN_IDLE:5}
+  flyway:
+    enabled: true
+    placeholders:
+      schema: ${SPRING_DATASOURCE_SCHEMA:public}
+
+server:
+  port: ${SERVER_PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,threaddump,env
+
+logging:
+  level:
+    root: INFO
+    org.hibernate.SQL: WARN

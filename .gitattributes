@@ -1,12 +1,18 @@
 * text=auto eol=lf
 
 *.bat text eol=crlf
+*.cmd text eol=crlf
 *.ps1 text eol=crlf
 
-# Mark binary assets
+# Binary assets
 *.png binary
 *.jpg binary
 *.jpeg binary
 *.gif binary
 *.ico binary
 *.pdf binary
+*.jar binary
+*.zip binary
+
+# Scripts
+*.sh text eol=lf

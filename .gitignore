@@ -1,33 +1,43 @@
-/.idea/
-/.vscode/
-/.DS_Store
+# General
+.DS_Store
 Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
 
 # Node.js
 node_modules/
 dist/
 coverage/
 
-# Java / Spring Boot
+# Java / Maven
 target/
-.gradle/
-build/
-out/
+backend/target/
 
-# Environment & runtime
-.env
-.env.local
-.env.*.local
+# Build artifacts
+build/
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# Logs
 *.log
 logs/
-/tmp/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
-# Docker
-*.pid
-/docker-data/
+# Environment files
+.env
+.env.*
+backend/.env
+backend/*.db
 
 # Misc
-*.iml
 *.swp
 *.swo
-.pytest_cache/
+pytest_cache/
