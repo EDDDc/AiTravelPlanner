@@ -29,6 +29,20 @@
 
 - ✅ 发布 PRD v0.3（`AI_Travel_Planner_PRD_v0.3.md`）
 - ✅ 输出开发阶段计划（`development_flow.md`）
-- 🚧 阶段 0：环境准备与规范配置（当前任务）
+- ✅ 阶段 0：环境准备与规范配置
+- 🚧 阶段 1：产品设计与原型确认
 
 后续工作会按照 `development_flow.md` 的阶段划分逐步推进。
+
+## 文档索引
+
+- 产品需求：`AI_Travel_Planner_PRD_v0.3.md`
+- 低保真原型：`docs/wireframes.md`
+- 信息架构：`docs/information_architecture.md`
+- 业务字段字典：`docs/domain_dictionary.md`
+- 用户故事与验收标准：`docs/user_stories.md`
+- 接口草稿：`docs/api/README.md`
+- 工程规范：`docs/engineering_practices.md`
+- 环境配置：`docs/environment.md`
+- 项目管理约定：`docs/project_management.md`
+- API Key 管理：`docs/api-key-management.md`

@@ -11,11 +11,11 @@
 
 ## 阶段 1：产品设计与原型确认
 
-- [ ] 输出低保真原型（行程概览、地图、预算、设置页面）并评审
-- [ ] 完善信息架构与导航流程，确认 MVP 功能边界
-- [ ] 细化用户故事与验收标准（Given-When-Then）
-- [ ] 评审并锁定 PRD、原型、业务字段字典
-- [ ] 建立接口文档（例如 Apifox/Swagger 草稿）
+- [x] 输出低保真原型（行程概览、地图、预算、设置页面）并评审 —— 见 `docs/wireframes.md`
+- [x] 完善信息架构与导航流程，确认 MVP 功能边界 —— 见 `docs/information_architecture.md`
+- [x] 细化用户故事与验收标准（Given-When-Then） —— 见 `docs/user_stories.md`
+- [x] 评审并锁定 PRD、原型、业务字段字典 —— 见 `AI_Travel_Planner_PRD_v0.3.md` 与 `docs/domain_dictionary.md`
+- [x] 建立接口文档（例如 Apifox/Swagger 草稿） —— 见 `docs/api/README.md`
 
 ## 阶段 2：后端基础设施
 
