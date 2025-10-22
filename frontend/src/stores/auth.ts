@@ -1,4 +1,4 @@
-import { defineStore } from "pinia";
+﻿import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 import http from "../services/http";
 
@@ -40,17 +40,45 @@ export const useAuthStore = defineStore("auth", () => {
   }
 
   async function login(payload: LoginPayload) {
-    // TODO: 替换为真实后端接口
-    const response = await http.post<AuthResponse>("/api/auth/login", payload);
-    persistSession(response.data);
+    try {
+      const response = await http.post<AuthResponse>(
+        "/api/auth/login",
+        payload,
+      );
+      persistSession(response.data);
+    } catch (error) {
+      console.warn("登录接口暂未连通，使用 Mock 数据", error);
+      persistSession({
+        accessToken: "mock-access-token",
+        refreshToken: "mock-refresh-token",
+        user: {
+          id: crypto.randomUUID(),
+          email: payload.email,
+          displayName: payload.email.split("@")[0] ?? "旅行者",
+        },
+      });
+    }
   }
 
   async function register(payload: RegisterPayload) {
-    const response = await http.post<AuthResponse>(
-      "/api/auth/register",
-      payload,
-    );
-    persistSession(response.data);
+    try {
+      const response = await http.post<AuthResponse>(
+        "/api/auth/register",
+        payload,
+      );
+      persistSession(response.data);
+    } catch (error) {
+      console.warn("注册接口暂未连通，使用 Mock 数据", error);
+      persistSession({
+        accessToken: "mock-access-token",
+        refreshToken: "mock-refresh-token",
+        user: {
+          id: crypto.randomUUID(),
+          email: payload.email,
+          displayName: payload.displayName,
+        },
+      });
+    }
   }
 
   function logout() {

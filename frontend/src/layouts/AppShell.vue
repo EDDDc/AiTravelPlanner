@@ -44,6 +44,21 @@
         <div class="header__actions">
           <button type="button" class="action-btn ghost">语音输入</button>
           <button type="button" class="action-btn primary">新建行程</button>
+          <div class="auth-entry" v-if="isAuthenticated">
+            <div class="auth-entry__name">{{ userDisplayName }}</div>
+            <button type="button" class="text-btn" @click="handleLogout">
+              退出登录
+            </button>
+          </div>
+          <div class="auth-entry" v-else>
+            <button type="button" class="text-btn" @click="goLogin">
+              登录
+            </button>
+            <span class="divider">|</span>
+            <button type="button" class="text-btn" @click="goRegister">
+              注册
+            </button>
+          </div>
         </div>
       </header>
 
@@ -56,11 +71,31 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { RouterLink, RouterView, useRoute } from "vue-router";
+import { RouterLink, RouterView, useRoute, useRouter } from "vue-router";
+import { useAuthStore } from "../stores/auth";
 
 const route = useRoute();
+const router = useRouter();
+const authStore = useAuthStore();
 
 const pageTitle = computed(() => route.meta?.title ?? "AI Travel Planner");
+const isAuthenticated = computed(() => authStore.isAuthenticated);
+const userDisplayName = computed(
+  () => authStore.user?.displayName ?? authStore.user?.email ?? "旅行者",
+);
+
+function goLogin() {
+  router.push({ name: "login", query: { redirect: route.fullPath } });
+}
+
+function goRegister() {
+  router.push({ name: "register", query: { redirect: route.fullPath } });
+}
+
+function handleLogout() {
+  authStore.logout();
+  router.push({ name: "login" });
+}
 </script>
 
 <style scoped>
@@ -144,6 +179,7 @@ const pageTitle = computed(() => route.meta?.title ?? "AI Travel Planner");
 .header__actions {
   display: flex;
   gap: 12px;
+  align-items: center;
 }
 
 .action-btn {
@@ -173,6 +209,31 @@ const pageTitle = computed(() => route.meta?.title ?? "AI Travel Planner");
 .action-btn.ghost:hover {
   color: var(--primary-color);
   border-color: var(--primary-color);
+}
+
+.auth-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.auth-entry__name {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.text-btn {
+  background: transparent;
+  border: none;
+  color: #5271ff;
+  cursor: pointer;
+  padding: 0;
+}
+
+.divider {
+  color: var(--border-color);
 }
 
 .content__body {

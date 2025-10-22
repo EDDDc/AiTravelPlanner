@@ -3,6 +3,7 @@ import {
   createWebHistory,
   type RouteRecordRaw,
 } from "vue-router";
+import { useAuthStore } from "../stores/auth";
 
 const routes: RouteRecordRaw[] = [
   {
@@ -60,12 +61,18 @@ const router = createRouter({
   routes,
 });
 
-router.beforeEach((to, _from, next) => {
+router.beforeEach((to) => {
   if (to.meta?.title) {
     document.title = `AI Travel Planner · ${to.meta.title as string}`;
   }
-  // TODO: 集成真实的鉴权逻辑
-  next();
+
+  const authStore = useAuthStore();
+  if (!to.meta?.public && !authStore.isAuthenticated) {
+    return {
+      name: "login",
+      query: { redirect: to.fullPath },
+    };
+  }
 });
 
 export default router;

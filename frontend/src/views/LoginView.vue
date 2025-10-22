@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="auth-card">
     <h1>登录</h1>
     <p class="subtitle">欢迎回来，请输入账号信息开始规划旅程。</p>
@@ -29,32 +29,52 @@
       </button>
     </form>
 
+    <p v-if="errorMessage" class="feedback error">{{ errorMessage }}</p>
+
     <p class="helper">
       还没有账号？
-      <RouterLink to="/register">前往注册</RouterLink>
+      <RouterLink
+        :to="{ name: 'register', query: { redirect: redirectTarget } }"
+      >
+        前往注册
+      </RouterLink>
     </p>
   </div>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from "vue";
-import { useRouter } from "vue-router";
+import { computed, reactive, ref } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "../stores/auth";
 
 const authStore = useAuthStore();
 const router = useRouter();
+const route = useRoute();
 
 const loading = ref(false);
+const errorMessage = ref("");
 const form = reactive({
   email: "",
   password: "",
 });
 
+const redirectTarget = computed(() => {
+  const redirect = route.query.redirect;
+  if (typeof redirect === "string" && redirect.startsWith("/")) {
+    return redirect;
+  }
+  return "/";
+});
+
 async function handleSubmit() {
   loading.value = true;
+  errorMessage.value = "";
   try {
     await authStore.login(form);
-    router.push({ name: "dashboard" });
+    router.push(redirectTarget.value);
+  } catch (error) {
+    console.error(error);
+    errorMessage.value = "登录失败，请检查账号或稍后重试。";
   } finally {
     loading.value = false;
   }
@@ -126,6 +146,16 @@ input:focus {
 .submit-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.feedback {
+  margin-top: 16px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.feedback.error {
+  color: #dc2626;
 }
 
 .helper {
