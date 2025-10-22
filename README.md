@@ -1,6 +1,6 @@
-# AI Travel Planner
+﻿# AI Travel Planner
 
-本仓库用于实现《AI Travel Planner》课程作业。项目采用前端 Vue 3、后端 Spring Boot 的分层架构，并将集成阿里云百炼、科大讯飞语音识别、高德地图等第三方服务。
+本仓库用于实现《AI Travel Planner》课程作业。项目采用前端 Vue 3、后端 Spring Boot 的分层架构，并整合阿里云百炼、科大讯飞语音识别、高德地图等第三方服务。
 
 ## 团队分工
 
@@ -9,30 +9,22 @@
 
 ## 环境要求
 
-- Node.js：推荐使用 LTS v20（本机当前为 `v22.20.0`，需切换至 v20）。
-- 包管理：建议 pnpm 8+（后续可按模板调整）。
-- Java：Temurin/OpenJDK 21（本机当前为 `23.0.1`，需安装并切换到 21）。
-- Maven：3.9+（后端使用 Maven 构建）。
-- Docker：24+，用于本地容器构建与运行。
+- Node.js：推荐使用 LTS v20（当前开发机为 `v22.20.0`，需切换到 v20）。
+- 包管理：建议 pnpm 8+（可根据项目需要调整）。
+- Java：Temurin/OpenJDK 21（当前开发机为 `23.0.1`，需切换到 21）。
+- Maven：3.9+（后端使用 Maven Wrapper 管理）。
+- Docker：24+，用于容器化构建与运行。
 
-详细环境配置与工具建议请参阅 `docs/environment.md`。
+详细的工具配置请参阅 `docs/environment.md`。
 
-## 工程规范
+## 项目进度
 
-- 统一按照 `.editorconfig` 规范进行格式化；提交前需通过 lint / format 检查。
-- 严禁将任何真实 API Key 纳入仓库，必须通过环境变量或设置页面输入。
-- Git 提交遵循 Conventional Commits，例如 `feat(frontend): add itinerary board`。
-- 更多工程实践与 API Key 管理规范见 `docs/engineering_practices.md` 与 `docs/api-key-management.md`。
-
-## 进度追踪
-
-- ✅ PRD v0.3（`AI_Travel_Planner_PRD_v0.3.md`）
-- ✅ 开发阶段计划（`development_flow.md`）
+- ✅ 发布 PRD v0.3（`AI_Travel_Planner_PRD_v0.3.md`）
+- ✅ 输出开发阶段计划（`development_flow.md`）
 - ✅ 阶段 0：环境准备与规范配置
 - ✅ 阶段 1：产品设计与原型确认
-- 🚧 阶段 2：后端基础设施（当前阶段）
-
-后续工作将按 `development_flow.md` 中的阶段逐步推进。
+- ✅ 阶段 2：后端基础设施
+- 🚧 阶段 3：前端框架与通用能力（当前阶段）
 
 ## 文档索引
 
@@ -45,13 +37,27 @@
 - 工程规范：`docs/engineering_practices.md`
 - 环境配置：`docs/environment.md`
 - 项目管理约定：`docs/project_management.md`
-- API Key 管理规范：`docs/api-key-management.md`
+- API Key 管理：`docs/api-key-management.md`
 - 后端说明：`backend/README.md`
 
 ## 快速开始（后端）
 
-1. 切换到 `backend` 目录，运行 `./mvnw spring-boot:run`（默认使用 `dev` Profile）。
-2. 测试命令：`./mvnw test`（测试配置采用 H2 内存数据库）。
-3. 环境变量参考根目录 `.env.example`，按需拆分到前后端。
+1. 进入 `backend` 目录：`cd backend`。
+2. 复制根目录 `.env.example` 中的数据库配置到本地 `.env`，指向 Supabase/PostgreSQL。
+3. 执行 `./mvnw spring-boot:run`（默认启用 `dev` profile，Flyway 会自动迁移结构）。
+4. 运行测试：`./mvnw test`。
 
-当前阶段完成后，将继续开展前端脚手架与核心业务功能开发。
+## 快速开始（前端）
+
+1. 进入 `frontend` 目录：`cd frontend`。
+2. 复制 `.env.example` 为 `.env`，设置 `VITE_APP_API_BASE_URL` 指向后端服务地址。
+3. 安装依赖：`npm install`。
+4. 本地开发：`npm run dev`；构建产物：`npm run build`。
+
+## 工程检查
+
+- 根目录：`npm run format`（Prettier 检查）。
+- 后端：`./backend/mvnw test`。
+- 前端：`npm run lint && npm run build`（在 `frontend` 目录执行）。
+
+后续迭代将按照 `development_flow.md` 中的阶段继续推进。
