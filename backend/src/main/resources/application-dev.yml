@@ -1,11 +1,12 @@
 spring:
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/aitravelplanner}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://db.vvpcsfkfphufcopeumbn.supabase.co:5432/postgres?sslmode=require}
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
-    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:PwMLOsuaMuu74wbv}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: ${SPRING_DATASOURCE_MAX_POOL_SIZE:10}
+      minimum-idle: ${SPRING_DATASOURCE_MIN_IDLE:2}
   flyway:
     enabled: true
     placeholders:

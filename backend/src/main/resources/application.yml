@@ -1,4 +1,6 @@
 spring:
+  config:
+    import: optional:dotenv:.env[.properties]
   application:
     name: ai-travel-planner-backend
   profiles:
