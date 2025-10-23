@@ -3,14 +3,16 @@
     <header class="budget__header">
       <div>
         <h1>预算中心</h1>
-        <p>连接后端费用数据，掌握实时支出情况，语音记账与导出功能后续上线。</p>
+        <p>
+          连接后端费用数据，掌握实时支出情况（语音记账与导出功能将在后续迭代提供）。
+        </p>
       </div>
       <div class="header-actions">
         <button class="ghost-btn" type="button" disabled>
-          语音记账（待实现）
+          语音记账（开发中）
         </button>
         <button class="primary-btn" type="button" disabled>
-          导出 CSV（待实现）
+          导出 CSV（开发中）
         </button>
       </div>
     </header>
@@ -35,8 +37,8 @@
       正在加载数据...
     </section>
 
-    <template v-else>
-      <section v-if="selectedPlanId" class="budget__grid">
+    <template v-else-if="selectedPlanId">
+      <section class="budget__grid">
         <article class="panel">
           <h2>预算概览</h2>
           <div class="overview">
@@ -71,12 +73,79 @@
 
       <section class="panel">
         <div class="panel__header">
+          <h2>新增费用</h2>
+        </div>
+        <form class="expense-form" @submit.prevent="handleSubmit">
+          <div class="form-row">
+            <label>
+              金额
+              <input
+                v-model="form.amount"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="例如：120.50"
+                required
+              />
+            </label>
+            <label>
+              币种
+              <input v-model="form.currency" maxlength="10" placeholder="CNY" />
+            </label>
+            <label>
+              分类
+              <select v-model="form.category" required>
+                <option
+                  v-for="option in categoryOptions"
+                  :key="option.value"
+                  :value="option.value"
+                >
+                  {{ option.label }}
+                </option>
+              </select>
+            </label>
+            <label>
+              记录方式
+              <select v-model="form.method" required>
+                <option
+                  v-for="option in methodOptions"
+                  :key="option.value"
+                  :value="option.value"
+                >
+                  {{ option.label }}
+                </option>
+              </select>
+            </label>
+            <label>
+              记录时间
+              <input v-model="form.recordedAt" type="datetime-local" required />
+            </label>
+          </div>
+          <label>
+            备注
+            <textarea
+              v-model="form.notes"
+              rows="2"
+              placeholder="可选"
+            ></textarea>
+          </label>
+          <div class="form-actions">
+            <span v-if="formError" class="error">{{ formError }}</span>
+            <button class="primary-btn" type="submit" :disabled="submitting">
+              {{ submitting ? "提交中..." : "新增费用" }}
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel">
+        <div class="panel__header">
           <h2>记账明细</h2>
           <button
             class="ghost-btn"
             type="button"
             @click="refresh"
-            :disabled="!selectedPlanId"
+            :disabled="isRefreshing"
           >
             刷新
           </button>
@@ -89,6 +158,7 @@
               <th>金额</th>
               <th>来源</th>
               <th>备注</th>
+              <th class="col-actions">操作</th>
             </tr>
           </thead>
           <tbody>
@@ -98,6 +168,16 @@
               <td>{{ formatCurrency(expense.amount, expense.currency) }}</td>
               <td>{{ methodLabel(expense.method) }}</td>
               <td>{{ expense.notes || "-" }}</td>
+              <td class="col-actions">
+                <button
+                  class="ghost-btn"
+                  type="button"
+                  :disabled="isDeleting"
+                  @click="removeExpense(expense.id)"
+                >
+                  删除
+                </button>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -108,7 +188,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { usePlanStore } from "../stores/plans";
 import { useExpenseStore } from "../stores/expenses";
@@ -127,9 +207,13 @@ const {
   summary,
   loading: expenseLoading,
   lastError: expenseStoreError,
+  isSaving,
+  isDeleting,
 } = storeToRefs(expenseStore);
 
 const selectedPlanId = ref<string>("");
+const isRefreshing = ref(false);
+const formError = ref("");
 
 const planOptions = computed(() => planList.value);
 const expensesList = computed(() => expenses.value);
@@ -144,6 +228,30 @@ const summaryData = computed<ExpenseSummary>(
 const isLoading = computed(() => planLoading.value || expenseLoading.value);
 const expenseError = computed(() => expenseStoreError.value);
 const planError = computed(() => planStoreError.value);
+const submitting = computed(() => isSaving.value);
+
+const categoryOptions = [
+  { value: "TRANSPORT", label: "交通" },
+  { value: "ACCOMMODATION", label: "住宿" },
+  { value: "DINING", label: "餐饮" },
+  { value: "ENTERTAINMENT", label: "娱乐" },
+  { value: "SHOPPING", label: "购物" },
+  { value: "OTHER", label: "其他" },
+];
+
+const methodOptions = [
+  { value: "MANUAL", label: "手动" },
+  { value: "VOICE", label: "语音" },
+];
+
+const form = reactive({
+  amount: "",
+  currency: "CNY",
+  category: "DINING",
+  method: "MANUAL",
+  recordedAt: initLocalDateTime(),
+  notes: "",
+});
 
 onMounted(async () => {
   if (!planOptions.value.length) {
@@ -171,16 +279,20 @@ watch(
     }
     await loadExpenses(planId);
   },
+  { immediate: false },
 );
 
 async function loadExpenses(planId: string) {
   try {
+    isRefreshing.value = true;
     await Promise.all([
       expenseStore.fetchExpenses(planId),
       expenseStore.fetchSummary(planId),
     ]);
   } catch (error) {
     // 错误已在 store 中处理
+  } finally {
+    isRefreshing.value = false;
   }
 }
 
@@ -190,8 +302,56 @@ function refresh() {
   }
 }
 
+async function handleSubmit() {
+  formError.value = "";
+  if (!selectedPlanId.value) {
+    formError.value = "请先选择行程";
+    return;
+  }
+
+  const amountNumeric = Number.parseFloat(form.amount);
+  if (!Number.isFinite(amountNumeric) || amountNumeric <= 0) {
+    formError.value = "请输入大于 0 的金额";
+    return;
+  }
+
+  try {
+    await expenseStore.createExpense(selectedPlanId.value, {
+      amount: Number.parseFloat(amountNumeric.toFixed(2)),
+      currency: form.currency.trim().toUpperCase() || "CNY",
+      category: form.category,
+      method: form.method,
+      recordedAt: toUtcISOString(form.recordedAt),
+      notes: form.notes?.trim() || undefined,
+    });
+    resetForm();
+  } catch (error) {
+    formError.value = "新增费用失败，请稍后再试";
+  }
+}
+
+async function removeExpense(expenseId: string) {
+  if (!selectedPlanId.value) {
+    return;
+  }
+  try {
+    await expenseStore.deleteExpense(selectedPlanId.value, expenseId);
+  } catch (error) {
+    // store 已记录错误，这里无需额外处理
+  }
+}
+
+function resetForm() {
+  form.amount = "";
+  form.currency = summaryData.value.currency || "CNY";
+  form.category = "DINING";
+  form.method = "MANUAL";
+  form.recordedAt = initLocalDateTime();
+  form.notes = "";
+}
+
 function formatCurrency(value: number, currency: string) {
-  if (Number.isNaN(value)) {
+  if (!Number.isFinite(value)) {
     return "-";
   }
   return new Intl.NumberFormat("zh-CN", {
@@ -210,19 +370,27 @@ function formatDateTime(value: string) {
 }
 
 function categoryLabel(category: string) {
-  const labels: Record<string, string> = {
-    TRANSPORT: "交通",
-    ACCOMMODATION: "住宿",
-    DINING: "餐饮",
-    ENTERTAINMENT: "娱乐",
-    SHOPPING: "购物",
-    OTHER: "其他",
-  };
-  return labels[category] ?? category;
+  const match = categoryOptions.find((item) => item.value === category);
+  return match ? match.label : category;
 }
 
 function methodLabel(method: string) {
-  return method === "VOICE" ? "语音" : "手动";
+  const match = methodOptions.find((item) => item.value === method);
+  return match ? match.label : method;
+}
+
+function initLocalDateTime() {
+  const date = new Date();
+  date.setMilliseconds(0);
+  return date.toISOString().slice(0, 16);
+}
+
+function toUtcISOString(localValue: string) {
+  const date = new Date(localValue);
+  if (Number.isNaN(date.getTime())) {
+    return new Date().toISOString();
+  }
+  return date.toISOString();
 }
 </script>
 
@@ -359,6 +527,46 @@ function methodLabel(method: string) {
   justify-content: space-between;
 }
 
+.expense-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+  color: #4b5563;
+}
+
+input,
+select,
+textarea {
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.form-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
 .record-table {
   width: 100%;
   border-collapse: collapse;
@@ -376,6 +584,10 @@ function methodLabel(method: string) {
 .record-table th {
   font-weight: 600;
   color: #6b7280;
+}
+
+.col-actions {
+  width: 80px;
 }
 
 .error {

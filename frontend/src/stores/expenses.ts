@@ -48,15 +48,29 @@ interface RawExpenseSummary {
   categories: RawSummaryCategory[];
 }
 
+export interface ExpenseCreatePayload {
+  amount: number;
+  currency: string;
+  category: string;
+  method: string;
+  recordedAt: string;
+  notes?: string;
+  transcript?: string;
+}
+
 export const useExpenseStore = defineStore("expenses", () => {
   const expenses = ref<ExpenseItem[]>([]);
   const summary = ref<ExpenseSummary | null>(null);
   const loadingList = ref(false);
   const loadingSummary = ref(false);
+  const saving = ref(false);
+  const deletingIds = ref<Set<string>>(new Set());
   const lastError = ref("");
 
   const hasExpenses = computed(() => expenses.value.length > 0);
   const loading = computed(() => loadingList.value || loadingSummary.value);
+  const isSaving = computed(() => saving.value);
+  const isDeleting = computed(() => deletingIds.value.size > 0);
 
   function mapExpense(raw: RawExpenseItem): ExpenseItem {
     return {
@@ -135,6 +149,43 @@ export const useExpenseStore = defineStore("expenses", () => {
     }
   }
 
+  async function createExpense(planId: string, payload: ExpenseCreatePayload) {
+    saving.value = true;
+    lastError.value = "";
+    try {
+      const response = await http.post<RawExpenseItem>(
+        `/api/plans/${planId}/expenses`,
+        payload,
+      );
+      const mapped = mapExpense(response.data);
+      expenses.value = [mapped, ...expenses.value];
+      await fetchSummary(planId);
+      return mapped;
+    } catch (error) {
+      console.error("Failed to create expense", error);
+      lastError.value = "新增费用失败，请检查输入或稍后再试。";
+      throw error;
+    } finally {
+      saving.value = false;
+    }
+  }
+
+  async function deleteExpense(planId: string, expenseId: string) {
+    deletingIds.value.add(expenseId);
+    lastError.value = "";
+    try {
+      await http.delete(`/api/plans/${planId}/expenses/${expenseId}`);
+      expenses.value = expenses.value.filter((item) => item.id !== expenseId);
+      await fetchSummary(planId);
+    } catch (error) {
+      console.error("Failed to delete expense", expenseId, error);
+      lastError.value = "删除费用失败，请稍后再试。";
+      throw error;
+    } finally {
+      deletingIds.value.delete(expenseId);
+    }
+  }
+
   function clear() {
     expenses.value = [];
     summary.value = null;
@@ -146,9 +197,15 @@ export const useExpenseStore = defineStore("expenses", () => {
     summary,
     hasExpenses,
     loading,
+    isSaving,
+    isDeleting,
+    saving,
+    deletingIds,
     lastError,
     fetchExpenses,
     fetchSummary,
+    createExpense,
+    deleteExpense,
     clear,
   };
 });
