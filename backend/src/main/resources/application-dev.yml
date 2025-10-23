@@ -16,8 +16,8 @@ app:
     jwt:
       issuer: ${APP_SECURITY_JWT_ISSUER:aitravel-planner}
       access-token-ttl: ${APP_SECURITY_JWT_ACCESS_TTL:PT1H}
-      refresh-token-ttl: ${APP_SECURITY_JWT_REFRESH_TTL:PT7D}
-      secret: ${APP_SECURITY_JWT_SECRET:change-me}
+      refresh-token-ttl: ${APP_SECURITY_JWT_REFRESH_TTL:P7D}
+      secret: ${APP_SECURITY_JWT_SECRET:change-me-please-change-me-change-me}
 
 logging:
   level:
