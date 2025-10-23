@@ -1,4 +1,4 @@
-import { defineStore } from "pinia";
+﻿import { defineStore } from "pinia";
 import { computed, reactive } from "vue";
 import http from "../services/http";
 
@@ -109,6 +109,7 @@ export const usePlanStore = defineStore("plans", () => {
     } catch (error) {
       console.error("Failed to load plans", error);
       state.lastError = "无法获取行程列表，请稍后重试。";
+      throw error;
     } finally {
       state.loading = false;
     }
@@ -146,7 +147,7 @@ export const usePlanStore = defineStore("plans", () => {
       return created;
     } catch (error) {
       console.error("Failed to create plan", error);
-      state.lastError = "创建行程失败，请检查填写内容或稍后重试。";
+      state.lastError = "创建行程失败，请稍后重试。";
       throw error;
     } finally {
       state.creating = false;
