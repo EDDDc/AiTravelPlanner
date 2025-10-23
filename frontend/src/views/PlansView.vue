@@ -83,6 +83,47 @@
           />
         </label>
 
+        <section class="voice-box">
+          <header class="voice-box__header">
+            <h3>语音速记</h3>
+            <span class="voice-box__hint"
+              >使用麦克风描述行程需求，系统会自动转写为文字并填入备注。</span
+            >
+          </header>
+          <div class="voice-box__controls">
+            <button
+              type="button"
+              class="ghost-btn"
+              @click="recording ? stopRecording() : startRecording()"
+              :disabled="transcriptionLoading"
+            >
+              {{ recording ? "停止录音" : "开始录音" }}
+            </button>
+            <button
+              v-if="transcript"
+              type="button"
+              class="ghost-btn"
+              @click="resetVoiceState"
+            >
+              清除结果
+            </button>
+          </div>
+          <p v-if="recording" class="voice-status">正在录音，请开始讲话…</p>
+          <p v-else-if="transcriptionLoading" class="voice-status">
+            正在转写音频…
+          </p>
+          <p v-else-if="transcript" class="voice-status success">
+            已写入备注，可继续编辑。
+          </p>
+          <p v-if="voiceError" class="error">{{ voiceError }}</p>
+          <textarea
+            v-if="transcript"
+            class="voice-preview"
+            :value="transcript"
+            readonly
+          />
+        </section>
+
         <div class="form-actions">
           <span v-if="creating" class="hint">正在创建占位行程...</span>
           <span v-else-if="formError" class="error">{{ formError }}</span>
@@ -135,7 +176,14 @@
 import { onMounted, reactive, ref, computed } from "vue";
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
+import http from "../services/http";
 import { usePlanStore } from "../stores/plans";
+
+interface VoiceTranscriptionResponse {
+  transcript: string;
+  provider: string;
+  status: string;
+}
 
 const planStore = usePlanStore();
 const router = useRouter();
@@ -167,6 +215,16 @@ const { planList, loading, creating, lastError, hasPlans } =
   storeToRefs(planStore);
 const plans = computed(() => planList.value);
 
+const recording = ref(false);
+const transcriptionLoading = ref(false);
+const transcript = ref("");
+const voiceError = ref("");
+
+let mediaRecorder: MediaRecorder | null = null;
+let mediaStream: MediaStream | null = null;
+let recordedChunks: BlobPart[] = [];
+let discardNextRecording = false;
+
 onMounted(() => {
   planStore.fetchPlans();
 });
@@ -178,6 +236,7 @@ function toggleForm() {
   if (!showForm.value) {
     resetForm();
   }
+  resetVoiceState();
 }
 
 function resetForm() {
@@ -189,6 +248,19 @@ function resetForm() {
   form.travelers = [];
   form.interests = [];
   form.notes = "";
+}
+
+function resetVoiceState() {
+  if (recording.value) {
+    discardNextRecording = true;
+    stopRecording();
+  } else {
+    cleanupMediaStream();
+  }
+  transcript.value = "";
+  voiceError.value = "";
+  transcriptionLoading.value = false;
+  recordedChunks = [];
 }
 
 function normalizeDestinations(raw: string) {
@@ -254,6 +326,7 @@ async function handleSubmit() {
     });
     resetForm();
     showForm.value = false;
+    resetVoiceState();
     router.push({ name: "plan-detail", params: { planId: created.id } });
   } catch (error) {
     console.error("Failed to create plan", error);
@@ -266,6 +339,89 @@ async function handleSubmit() {
 function goDetail(planId: string) {
   planStore.setCurrentPlan(planId);
   router.push({ name: "plan-detail", params: { planId } });
+}
+
+async function startRecording() {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    voiceError.value = "当前浏览器不支持语音录入，请改用文字输入。";
+    return;
+  }
+  if (recording.value) {
+    return;
+  }
+  voiceError.value = "";
+  transcript.value = "";
+  discardNextRecording = false;
+  try {
+    mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    recordedChunks = [];
+    mediaRecorder = new MediaRecorder(mediaStream);
+    mediaRecorder.ondataavailable = (event: BlobEvent) => {
+      if (event.data.size > 0) {
+        recordedChunks.push(event.data);
+      }
+    };
+    mediaRecorder.onstop = async () => {
+      recording.value = false;
+      const blob = new Blob(recordedChunks, { type: "audio/webm" });
+      recordedChunks = [];
+      await uploadRecordedAudio(blob);
+      cleanupMediaStream();
+    };
+    mediaRecorder.start();
+    recording.value = true;
+  } catch (error) {
+    console.error("Failed to start recording", error);
+    voiceError.value = "无法访问麦克风，请检查浏览器权限。";
+    cleanupMediaStream();
+  }
+}
+
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state !== "inactive") {
+    mediaRecorder.stop();
+  } else {
+    cleanupMediaStream();
+    recording.value = false;
+  }
+}
+
+async function uploadRecordedAudio(blob: Blob) {
+  if (discardNextRecording) {
+    discardNextRecording = false;
+    return;
+  }
+  if (blob.size === 0) {
+    voiceError.value = "录音数据为空，请重试。";
+    return;
+  }
+  transcriptionLoading.value = true;
+  voiceError.value = "";
+  try {
+    const formData = new FormData();
+    formData.append("file", blob, `record-${Date.now()}.webm`);
+    const response = await http.post<VoiceTranscriptionResponse>(
+      "/api/voice/transcriptions",
+      formData,
+    );
+    transcript.value = response.data.transcript;
+    form.notes = form.notes
+      ? `${form.notes}\n${response.data.transcript}`
+      : response.data.transcript;
+  } catch (error) {
+    console.error("Failed to upload audio", error);
+    voiceError.value = "语音转写失败，请稍后再试，或改用文字输入。";
+  } finally {
+    transcriptionLoading.value = false;
+  }
+}
+
+function cleanupMediaStream() {
+  if (mediaStream) {
+    mediaStream.getTracks().forEach((track) => track.stop());
+    mediaStream = null;
+  }
+  mediaRecorder = null;
 }
 
 function formatDate(value: string) {
@@ -415,6 +571,61 @@ function formatCurrency(value: number | string | null | undefined) {
 .form-row--checkbox input[type="checkbox"] {
   width: 16px;
   height: 16px;
+}
+
+.voice-box {
+  border: 1px dashed #cbd5f5;
+  border-radius: 12px;
+  padding: 16px;
+  background: rgba(82, 113, 255, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.voice-box__header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.voice-box__header h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #16213e;
+}
+
+.voice-box__hint {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.voice-box__controls {
+  display: flex;
+  gap: 12px;
+}
+
+.voice-status {
+  margin: 0;
+  font-size: 13px;
+  color: #4b5563;
+}
+
+.voice-status.success {
+  color: #15803d;
+}
+
+.voice-preview {
+  width: 100%;
+  min-height: 80px;
+  border-radius: 10px;
+  border: 1px solid #cbd5f5;
+  background: white;
+  padding: 10px;
+  color: #334155;
+  font-size: 13px;
+  resize: vertical;
 }
 
 .form-actions {
