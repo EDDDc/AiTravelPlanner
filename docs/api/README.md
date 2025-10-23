@@ -33,6 +33,7 @@
   }
   ```
 - 行程详情中 `days/activities` 当前由后端占位生成，后续将替换为 AI 规划结果。
+- 字段约束：`endDate` 必须不早于 `startDate`，`destinations` 至少包含一个目的地。
 
 ## 3. 预算模块 `/api/plans/{planId}/budget`
 

@@ -11,9 +11,11 @@ import com.aitravelplanner.backend.auth.RegisterRequest;
 import com.aitravelplanner.backend.plan.dto.TravelPlanCreateRequest;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -74,6 +76,11 @@ class TravelPlanControllerTest {
             .destinations(List.of("Tokyo"))
             .startDate(LocalDate.of(2025, 2, 1))
             .endDate(LocalDate.of(2025, 2, 3))
+            .budgetTotal(new BigDecimal("15000"))
+            .preferences(
+                Map.of(
+                    "travelers", List.of("亲子家庭"),
+                    "interests", List.of("美食探索")))
             .build();
 
     MvcResult createResult =
@@ -85,6 +92,8 @@ class TravelPlanControllerTest {
                     .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.title").value("Tokyo Family Trip"))
+            .andExpect(jsonPath("$.budgetTotal").value(15000))
+            .andExpect(jsonPath("$.preferences.travelers").value("亲子家庭"))
             .andExpect(jsonPath("$.days").isArray())
             .andReturn();
 
@@ -97,9 +106,9 @@ class TravelPlanControllerTest {
             get("/api/plans")
                 .header("Authorization", "Bearer " + jwtToken)
                 .accept(MediaType.APPLICATION_JSON))
-        
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$[0].id").value(planId));
+        .andExpect(jsonPath("$[0].id").value(planId))
+        .andExpect(jsonPath("$[0].budgetTotal").value(15000));
 
     MvcResult detailResult =
         mockMvc
@@ -107,9 +116,10 @@ class TravelPlanControllerTest {
                 get("/api/plans/{planId}", planId)
                     .header("Authorization", "Bearer " + jwtToken)
                     .accept(MediaType.APPLICATION_JSON))
-            
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.id").value(planId))
+            .andExpect(jsonPath("$.preferences.travelers").value("亲子家庭"))
+            .andExpect(jsonPath("$.preferences.interests").value("美食探索"))
             .andExpect(jsonPath("$.days").isArray())
             .andReturn();
 
@@ -174,6 +184,25 @@ class TravelPlanControllerTest {
         
         .andExpect(status().isNotFound());
   }
+
+  @Test
+  @DisplayName("reject plan when end date precedes start date")
+  void shouldRejectPlanWithInvalidDateRange() throws Exception {
+    TravelPlanCreateRequest request =
+        TravelPlanCreateRequest.builder()
+            .title("Invalid Date Trip")
+            .destinations(List.of("Shanghai"))
+            .startDate(LocalDate.of(2025, 5, 10))
+            .endDate(LocalDate.of(2025, 5, 8))
+            .build();
+
+    mockMvc
+        .perform(
+            post("/api/plans")
+                .header("Authorization", "Bearer " + jwtToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.errors.dateRangeValid").value("结束日期不能早于开始日期"));
+  }
 }
-
-

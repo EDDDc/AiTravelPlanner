@@ -8,9 +8,14 @@ import com.aitravelplanner.backend.plan.dto.TravelPlanSummaryDto;
 import com.aitravelplanner.backend.user.User;
 import com.aitravelplanner.backend.user.UserNotFoundException;
 import com.aitravelplanner.backend.user.UserRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
+import java.lang.reflect.Array;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,11 +31,14 @@ import org.springframework.stereotype.Service;
 public class TravelPlanService {
 
   private static final Logger log = LoggerFactory.getLogger(TravelPlanService.class);
+  private static final TypeReference<Map<String, Object>> PREFERENCES_TYPE =
+      new TypeReference<>() {};
 
   private final TravelPlanRepository travelPlanRepository;
   private final DayPlanRepository dayPlanRepository;
   private final ActivityRepository activityRepository;
   private final UserRepository userRepository;
+  private final ObjectMapper objectMapper;
 
   @Transactional
   public TravelPlanDetailDto createPlan(UUID userId, TravelPlanCreateRequest request) {
@@ -47,8 +55,8 @@ public class TravelPlanService {
     plan.setStartDate(request.getStartDate());
     plan.setEndDate(request.getEndDate());
     plan.setBudgetTotal(request.getBudgetTotal());
-    plan.setPreferences(
-        request.getPreferences() != null ? new HashMap<>(request.getPreferences()) : null);
+    plan.setPreferencesJson(
+        writePreferencesJson(normalizePreferences(request.getPreferences())));
     plan.setStatus(PlanStatus.DRAFT);
 
     TravelPlan savedPlan = travelPlanRepository.save(plan);
@@ -159,7 +167,7 @@ public class TravelPlanService {
         .endDate(plan.getEndDate())
         .budgetTotal(plan.getBudgetTotal())
         .status(plan.getStatus())
-        .preferences(plan.getPreferences() != null ? plan.getPreferences() : Map.of())
+        .preferences(readPreferences(plan.getPreferencesJson()))
         .days(dayPlanDtos)
         .build();
   }
@@ -177,6 +185,79 @@ public class TravelPlanService {
         .address(activity.getLocation() != null ? activity.getLocation().getAddress() : null)
         .build();
   }
+
+  private String writePreferencesJson(Map<String, Object> preferences) {
+    if (preferences == null || preferences.isEmpty()) {
+      return null;
+    }
+    try {
+      return objectMapper.writeValueAsString(preferences);
+    } catch (JsonProcessingException ex) {
+      log.warn("Failed to serialize preferences payload, value discarded", ex);
+      return null;
+    }
+  }
+
+  private Map<String, Object> readPreferences(String json) {
+    if (json == null || json.isBlank()) {
+      return Map.of();
+    }
+    String content = json.trim();
+    try {
+      if ((content.startsWith("\"") && content.endsWith("\""))
+          || (content.startsWith("'") && content.endsWith("'"))) {
+        content = objectMapper.readValue(content, String.class);
+      }
+      return objectMapper.readValue(content, PREFERENCES_TYPE);
+    } catch (JsonProcessingException ex) {
+      log.warn("Failed to deserialize preferences json: {}", json, ex);
+      return Map.of();
+    }
+  }
+
+  private Map<String, Object> normalizePreferences(Map<String, Object> source) {
+    if (source == null || source.isEmpty()) {
+      return null;
+    }
+    Map<String, Object> normalized = new HashMap<>();
+    source.forEach(
+        (key, value) -> {
+          if (value == null) {
+            return;
+          }
+          if (value instanceof Collection<?> collection) {
+            List<String> items =
+                collection.stream()
+                    .map(item -> item == null ? "" : item.toString().trim())
+                    .filter(str -> !str.isEmpty())
+                    .collect(Collectors.toList());
+            if (!items.isEmpty()) {
+              normalized.put(key, String.join("、", items));
+            }
+            return;
+          }
+          if (value.getClass().isArray()) {
+            int length = Array.getLength(value);
+            List<String> items = new ArrayList<>();
+            for (int i = 0; i < length; i++) {
+              Object element = Array.get(value, i);
+              if (element != null) {
+                String text = element.toString().trim();
+                if (!text.isEmpty()) {
+                  items.add(text);
+                }
+              }
+            }
+            if (!items.isEmpty()) {
+              normalized.put(key, String.join("、", items));
+            }
+            return;
+          }
+          String text = value.toString().trim();
+          if (!text.isEmpty()) {
+            normalized.put(key, text);
+          }
+        });
+    return normalized.isEmpty() ? null : normalized;
+  }
 }
-
-

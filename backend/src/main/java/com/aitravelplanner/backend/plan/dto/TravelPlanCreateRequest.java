@@ -1,5 +1,6 @@
 package com.aitravelplanner.backend.plan.dto;
 
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
@@ -28,4 +29,12 @@ public class TravelPlanCreateRequest {
   BigDecimal budgetTotal;
 
   Map<String, Object> preferences;
+
+  @AssertTrue(message = "结束日期不能早于开始日期")
+  public boolean isDateRangeValid() {
+    if (startDate == null || endDate == null) {
+      return true;
+    }
+    return !endDate.isBefore(startDate);
+  }
 }

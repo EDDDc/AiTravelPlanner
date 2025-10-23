@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { ref, computed } from "vue";
+import { computed, reactive } from "vue";
 import http from "../services/http";
 
 export interface TravelPlanSummary {
@@ -42,70 +42,131 @@ export interface CreatePlanPayload {
   preferences?: Record<string, unknown>;
 }
 
-export const usePlanStore = defineStore("plans", () => {
-  const plans = ref<TravelPlanSummary[]>([]);
-  const currentPlan = ref<TravelPlanDetail | null>(null);
-  const loading = ref(false);
-  const creating = ref(false);
-  const lastError = ref("");
+interface PlanState {
+  summaries: TravelPlanSummary[];
+  details: Record<string, TravelPlanDetail>;
+  currentPlanId: string | null;
+  loading: boolean;
+  creating: boolean;
+  lastError: string;
+}
 
-  const hasPlans = computed(() => plans.value.length > 0);
+function detailToSummary(detail: TravelPlanDetail): TravelPlanSummary {
+  return {
+    id: detail.id,
+    title: detail.title,
+    destinations: detail.destinations,
+    startDate: detail.startDate,
+    endDate: detail.endDate,
+    budgetTotal: detail.budgetTotal,
+    status: detail.status,
+  };
+}
+
+export const usePlanStore = defineStore("plans", () => {
+  const state = reactive<PlanState>({
+    summaries: [],
+    details: {},
+    currentPlanId: null,
+    loading: false,
+    creating: false,
+    lastError: "",
+  });
+
+  const planList = computed(() => state.summaries);
+  const hasPlans = computed(() => state.summaries.length > 0);
+
+  const currentPlan = computed(() => {
+    if (!state.currentPlanId) {
+      return null;
+    }
+    return state.details[state.currentPlanId] ?? null;
+  });
+
+  function setCurrentPlan(planId: string | null) {
+    state.currentPlanId = planId;
+  }
+
+  function clearError() {
+    state.lastError = "";
+  }
 
   async function fetchPlans() {
-    loading.value = true;
-    lastError.value = "";
+    state.loading = true;
+    state.lastError = "";
     try {
       const response = await http.get<TravelPlanSummary[]>("/api/plans");
-      plans.value = response.data;
+      state.summaries = response.data;
+      for (const summary of response.data) {
+        const detail = state.details[summary.id];
+        if (detail) {
+          state.details[summary.id] = {
+            ...detail,
+            ...summary,
+          };
+        }
+      }
     } catch (error) {
       console.error("Failed to load plans", error);
-      lastError.value = "无法获取行程列表，请稍后重试。";
+      state.lastError = "无法获取行程列表，请稍后重试。";
     } finally {
-      loading.value = false;
+      state.loading = false;
     }
   }
 
   async function fetchPlanById(planId: string) {
-    loading.value = true;
-    lastError.value = "";
+    state.loading = true;
+    state.lastError = "";
     try {
       const response = await http.get<TravelPlanDetail>(`/api/plans/${planId}`);
-      currentPlan.value = response.data;
+      state.details[planId] = response.data;
+      state.currentPlanId = planId;
       return response.data;
     } catch (error) {
       console.error("Failed to load plan", planId, error);
-      lastError.value = "无法获取行程详情，请稍后重试。";
+      state.lastError = "无法获取行程详情，请稍后重试。";
       throw error;
     } finally {
-      loading.value = false;
+      state.loading = false;
     }
   }
 
   async function createPlan(payload: CreatePlanPayload) {
-    creating.value = true;
-    lastError.value = "";
+    state.creating = true;
+    state.lastError = "";
     try {
       const response = await http.post<TravelPlanDetail>("/api/plans", payload);
       const created = response.data;
-      plans.value = [created, ...plans.value];
-      currentPlan.value = created;
+      state.details[created.id] = created;
+      state.summaries = [
+        detailToSummary(created),
+        ...state.summaries.filter((plan) => plan.id !== created.id),
+      ];
+      state.currentPlanId = created.id;
       return created;
     } catch (error) {
       console.error("Failed to create plan", error);
-      lastError.value = "创建行程失败，请检查填写内容或稍后重试。";
+      state.lastError = "创建行程失败，请检查填写内容或稍后重试。";
       throw error;
     } finally {
-      creating.value = false;
+      state.creating = false;
     }
   }
 
   return {
-    plans,
-    currentPlan,
-    loading,
-    creating,
-    lastError,
+    planList,
     hasPlans,
+    currentPlan,
+    loading: computed(() => state.loading),
+    creating: computed(() => state.creating),
+    lastError: computed({
+      get: () => state.lastError,
+      set: (value: string) => {
+        state.lastError = value;
+      },
+    }),
+    clearError,
+    setCurrentPlan,
     fetchPlans,
     fetchPlanById,
     createPlan,

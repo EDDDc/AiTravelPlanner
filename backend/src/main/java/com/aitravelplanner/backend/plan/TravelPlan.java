@@ -19,12 +19,9 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 @Getter
 @Setter
@@ -55,9 +52,8 @@ public class TravelPlan extends BaseEntity {
   @Column(name = "budget_total", precision = 12, scale = 2)
   private BigDecimal budgetTotal;
 
-  @JdbcTypeCode(SqlTypes.JSON)
   @Column(name = "preferences", columnDefinition = "jsonb")
-  private Map<String, Object> preferences;
+  private String preferencesJson;
 
   @Enumerated(EnumType.STRING)
   @Column(name = "status", nullable = false, length = 20)
