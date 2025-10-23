@@ -26,7 +26,6 @@ CREATE TABLE travel_plans (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
     title VARCHAR(160) NOT NULL,
-    destinations JSONB,
     start_date DATE NOT NULL,
     end_date DATE NOT NULL,
     budget_total NUMERIC(12,2),
@@ -37,6 +36,13 @@ CREATE TABLE travel_plans (
 );
 
 CREATE INDEX idx_travel_plans_user ON travel_plans (user_id);
+
+CREATE TABLE travel_plan_destinations (
+    plan_id UUID NOT NULL REFERENCES travel_plans (id) ON DELETE CASCADE,
+    destination VARCHAR(160) NOT NULL
+);
+
+CREATE INDEX idx_travel_plan_destinations_plan ON travel_plan_destinations (plan_id);
 
 CREATE TABLE day_plans (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

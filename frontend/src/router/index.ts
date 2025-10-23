@@ -1,4 +1,4 @@
-﻿import {
+import {
   createRouter,
   createWebHistory,
   type RouteRecordRaw,
@@ -35,6 +35,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: "我的行程" },
       },
       {
+        path: "plans/:planId",
+        name: "plan-detail",
+        component: () => import("../views/PlanDetailView.vue"),
+        meta: { title: "行程详情" },
+      },
+      {
         path: "budget",
         name: "budget",
         component: () => import("../views/BudgetView.vue"),
@@ -58,7 +64,7 @@ const routes: RouteRecordRaw[] = [
     path: "/:pathMatch(.*)*",
     name: "not-found",
     component: () => import("../views/NotFoundView.vue"),
-    meta: { public: true, title: "未找到页面" },
+    meta: { public: true, title: "页面不存在" },
   },
 ];
 

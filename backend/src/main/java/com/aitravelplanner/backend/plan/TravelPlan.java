@@ -4,11 +4,12 @@ import com.aitravelplanner.backend.common.model.BaseEntity;
 import com.aitravelplanner.backend.user.User;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
-import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
@@ -38,8 +39,11 @@ public class TravelPlan extends BaseEntity {
   @Column(name = "title", nullable = false, length = 160)
   private String title;
 
-  @JdbcTypeCode(SqlTypes.JSON)
-  @Column(name = "destinations", columnDefinition = "jsonb")
+  @ElementCollection
+  @CollectionTable(
+      name = "travel_plan_destinations",
+      joinColumns = @JoinColumn(name = "plan_id", nullable = false))
+  @Column(name = "destination", nullable = false, length = 160)
   private List<String> destinations = new ArrayList<>();
 
   @Column(name = "start_date", nullable = false)

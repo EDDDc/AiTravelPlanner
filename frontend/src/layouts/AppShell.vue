@@ -9,36 +9,35 @@
         <RouterLink
           to="/"
           class="nav__item"
-          active-class="nav__item--active"
-          exact
+          :class="{ 'nav__item--active': isActive('/') }"
         >
           行程概览
         </RouterLink>
         <RouterLink
           to="/plans"
           class="nav__item"
-          active-class="nav__item--active"
+          :class="{ 'nav__item--active': isPlansRoute }"
         >
           我的行程
         </RouterLink>
         <RouterLink
           to="/budget"
           class="nav__item"
-          active-class="nav__item--active"
+          :class="{ 'nav__item--active': isActive('/budget') }"
         >
           预算中心
         </RouterLink>
         <RouterLink
           to="/map"
           class="nav__item"
-          active-class="nav__item--active"
+          :class="{ 'nav__item--active': isActive('/map') }"
         >
           地图视图
         </RouterLink>
         <RouterLink
           to="/settings/api-keys"
           class="nav__item"
-          active-class="nav__item--active"
+          :class="{ 'nav__item--active': isActive('/settings/api-keys') }"
         >
           API Key 设置
         </RouterLink>
@@ -49,12 +48,18 @@
       <header class="content__header">
         <div class="header__title">{{ pageTitle }}</div>
         <div class="header__actions">
-          <button type="button" class="action-btn ghost">语音输入</button>
-          <button type="button" class="action-btn primary">新建行程</button>
+          <button type="button" class="action-btn ghost">语音需求</button>
+          <button
+            type="button"
+            class="action-btn primary"
+            @click="goCreatePlan"
+          >
+            新建行程
+          </button>
           <div class="auth-entry" v-if="isAuthenticated">
             <div class="auth-entry__name">{{ userDisplayName }}</div>
             <button type="button" class="text-btn" @click="handleLogout">
-              退出登录
+              退出
             </button>
           </div>
           <div class="auth-entry" v-else>
@@ -91,12 +96,22 @@ const userDisplayName = computed(
   () => authStore.user?.displayName ?? authStore.user?.email ?? "旅行者",
 );
 
+const isPlansRoute = computed(() => route.path.startsWith("/plans"));
+
+function isActive(target: string) {
+  return route.path === target;
+}
+
 function goLogin() {
   router.push({ name: "login", query: { redirect: route.fullPath } });
 }
 
 function goRegister() {
   router.push({ name: "register", query: { redirect: route.fullPath } });
+}
+
+function goCreatePlan() {
+  router.push({ name: "plans" });
 }
 
 function handleLogout() {

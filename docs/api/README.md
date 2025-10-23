@@ -1,6 +1,6 @@
-# 后端接口草稿（v0.1）
+# 后端接口草稿（v0.2）
 
-> 本文档提供阶段 1 的 API 结构草稿，用于后续在 Apifox/Swagger 中建模。接口路径可能随实现调整，请在开发时同步更新。
+> 本文档同步当前已实现/规划中的主要接口。实际参数和响应以 Swagger/OpenAPI 描述为准，开发时需保持更新。
 
 ## 1. 认证模块 `/api/auth`
 
@@ -12,40 +12,31 @@
 
 ## 2. 行程模块 `/api/plans`
 
-| 方法   | 路径        | 描述                   | 请求体                          | 响应                    |
-| ------ | ----------- | ---------------------- | ------------------------------- | ----------------------- |
-| GET    | `/`         | 获取用户行程列表       | `query: page, pageSize, status` | `Paginated<TravelPlan>` |
-| POST   | `/`         | 创建新行程（触发 LLM） | `CreatePlanRequest`             | `TravelPlan`            |
-| GET    | `/{planId}` | 获取行程详情           | -                               | `PlanDetail`            |
-| PUT    | `/{planId}` | 更新行程基础信息       | `UpdatePlanRequest`             | `TravelPlan`            |
-| DELETE | `/{planId}` | 归档/删除行程          | -                               | `{ success: true }`     |
+| 方法 | 路径        | 描述                   | 请求体             | 响应                  |
+| ---- | ----------- | ---------------------- | ------------------ | --------------------- |
+| GET  | `/`         | 获取当前用户行程列表   | -                  | `TravelPlanSummary[]` |
+| GET  | `/{planId}` | 获取指定行程详情       | -                  | `TravelPlanDetail`    |
+| POST | `/`         | 创建行程（当前为占位） | `TravelPlanCreate` | `TravelPlanDetail`    |
 
-### 2.1 行程活动子资源
-
-- `GET /{planId}/days`
-- `POST /{planId}/days`
-- `PUT /{planId}/days/{dayId}`
-- `POST /{planId}/activities`
-- `PUT /{planId}/activities/{activityId}`
-- `DELETE /{planId}/activities/{activityId}`
-
-活动请求体包括：
-
-```json
-{
-  "dayId": "UUID",
-  "type": "transport",
-  "name": "成田机场 → 上野",
-  "startTime": "08:00",
-  "endTime": "09:30",
-  "location": { "lat": 35.7738, "lng": 140.3929, "address": "..." },
-  "costEstimate": 1200,
-  "notes": "",
-  "metadata": {}
-}
-```
+- `TravelPlanCreate` 结构：
+  ```json
+  {
+    "title": "东京亲子行",
+    "destinations": ["东京"],
+    "startDate": "2025-02-01",
+    "endDate": "2025-02-03",
+    "budgetTotal": 12000,
+    "preferences": {
+      "travelers": ["family"],
+      "interests": ["food", "anime"]
+    }
+  }
+  ```
+- 行程详情中 `days/activities` 当前由后端占位生成，后续将替换为 AI 规划结果。
 
 ## 3. 预算模块 `/api/plans/{planId}/budget`
+
+规划阶段，接口仍为草稿：
 
 | 方法   | 路径                    | 描述                                         |
 | ------ | ----------------------- | -------------------------------------------- |
@@ -55,9 +46,7 @@
 | DELETE | `/expenses/{expenseId}` | 删除费用记录                                 |
 | GET    | `/export`               | 导出 CSV（返回文件或下载链接）               |
 
-语音记账流程：前端上传音频至 `/api/voice/expenses`，后端与讯飞交互后落库。
-
-## 4. 语音与模型服务
+## 4. 语音与大模型服务
 
 | 方法 | 路径                        | 描述                    |
 | ---- | --------------------------- | ----------------------- |
@@ -65,9 +54,9 @@
 | POST | `/api/llm/itinerary`        | 使用百炼模型生成行程    |
 | POST | `/api/llm/assistant`        | 行程问答                |
 
-所有外部调用应在后端完成，前端仅获取结果，避免暴露 Key。
+所有外部调用在后端完成，避免前端暴露 Key。
 
-## 5. 设置与 Key 管理 `/api/settings`
+## 5. 设置 / Key 管理 `/api/settings`
 
 | 方法 | 路径             | 描述                                          |
 | ---- | ---------------- | --------------------------------------------- |
@@ -79,37 +68,44 @@
 
 ## 6. 地图与 POI `/api/maps`
 
-- `GET /poi/search?planId=&type=`：根据计划位置推荐附近 POI。
-- `GET /routes?origin=&destination=&mode=`：封装高德路径规划。
+- `GET /poi/search?planId=&type=`：根据行程位置推荐周边 POI。
+- `GET /routes?origin=&destination=&mode=`：封装高德路线规划。
 
-## 7. 数据模型（接口视角）
+## 7. 数据模型示例
 
 ```json
 {
-  "id": "UUID",
-  "title": "东京亲子游",
-  "destination": ["东京", "箱根"],
+  "id": "a5f9c2d9-4c1b-4a2b-9278-5d3f8d90d8ae",
+  "title": "东京亲子行",
+  "destinations": ["东京"],
   "startDate": "2025-02-01",
-  "endDate": "2025-02-05",
-  "budgetTotal": 10000,
+  "endDate": "2025-02-03",
+  "budgetTotal": 12000,
+  "status": "DRAFT",
   "preferences": {
     "travelers": ["family"],
-    "interests": ["food", "anime"]
+    "interests": ["anime"]
   },
-  "status": "active",
   "days": [
     {
       "dayIndex": 1,
       "date": "2025-02-01",
-      "summary": "抵达 & 浅草寺",
-      "activities": []
+      "summary": "占位行程概述",
+      "notes": "详细日程稍后生成",
+      "activities": [
+        {
+          "type": "OTHER",
+          "name": "待生成活动",
+          "description": "AI 生成内容将在此处展示"
+        }
+      ]
     }
   ]
 }
 ```
 
-完整字段说明见 `docs/domain_dictionary.md`。
+更多字段定义见 `docs/domain_dictionary.md`。
 
 ---
 
-后续会将以上接口导入 Swagger/OpenAPI 文档，并与后端实现保持同步。若有新增接口，请在此文档中记录，并更新开发流程状态。
+更新流程：如新增接口或字段，需同步修改本文件、Swagger 文档以及 `development_flow.md` 中的任务状态。
